@@ -1,111 +1,65 @@
-🚀 3D Print Order & M-Pesa Automation Service
-This is a serverless application built with Node.js and Express that manages the entire lifecycle of a 3D printing order, from file upload and M-Pesa payment processing to final storage in Google Cloud Storage and administrative tracking.
+# 🚀 3D Print Order & M-Pesa Automation Service
 
-It is designed to run efficiently on Google Cloud Run, taking advantage of its scale-to-zero capabilities for cost optimization.
+This is a **serverless application** built with **Node.js** and **Express** that manages the entire lifecycle of a 3D printing order — from **file upload** and **M-Pesa payment processing** to **Google Cloud Storage (GCS) archival** and **administrative tracking**.
 
-✨ Features
-Secure File Upload: Users can upload 3D model files (STL, OBJ, etc.).
+It is designed to run efficiently on **Google Cloud Run**, taking advantage of **scale-to-zero** capabilities for cost optimization.
 
-M-Pesa STK Push Integration: Initiates Lipa na M-Pesa Online checkout request directly to the user's phone.
+---
 
-Real-time Callback Handling: Dedicated server endpoint handles the M-Pesa Confirmation callback (/api/mpesa/callback).
+## ✨ Features
 
-GCS Integration: Successful payments trigger the automatic upload of the file to a Google Cloud Storage bucket.
+- **🔒 Secure File Upload**: Users can upload 3D model files (`.stl`, `.obj`, `.gltf`, `.glb`, `.ply`).
+- **📲 M-Pesa STK Push Integration**: Initiates **Lipa na M-Pesa Online** checkout request directly to the user's phone.
+- **⚡ Real-time Callback Handling**: Dedicated endpoint processes M-Pesa confirmation callbacks at `/api/mpesa/callback`.
+- **☁️ Google Cloud Storage Integration**: Successful payments trigger automatic upload of the file to a **GCS bucket**.
+- **🗄️ Database Tracking**: MongoDB (via **Mongoose**) tracks payment status, M-Pesa Reference IDs, and collection deadlines.
+- **📧 Email Notifications**: Customers receive an order confirmation email after payment & file upload.
+- **📊 Admin Dashboard**: Secure dashboard for viewing orders, payment status, and downloading files.
 
-Database Tracking: Uses MongoDB (via Mongoose) to track payment status, M-Pesa Reference ID, and collection deadlines.
+---
 
-Email Notifications: Sends order confirmation emails to the customer upon successful payment and file upload.
+## 🛠️ Tech Stack
 
-Admin Dashboard: Provides a dashboard to view all orders, payment status, and secure download links.
+| **Component**     | **Technology**                | **Role**                                                   |
+|--------------------|-------------------------------|-------------------------------------------------------------|
+| **Backend**        | Node.js, Express             | Core application server & routing                          |
+| **Database**       | MongoDB Atlas, Mongoose      | Persistent storage for order metadata & payment status      |
+| **Cloud Storage**  | Google Cloud Storage (GCS)   | Scalable & secure storage for 3D model files               |
+| **Payments**       | M-Pesa Daraja API (STK Push) | Mobile payments integration                                |
+| **Deployment**     | Docker, Google Cloud Run     | Serverless, containerized hosting with **scale-to-zero**   |
 
-🛠️ Tech Stack
-Component
+---
 
-Technology
+## ⚙️ Local Setup
 
-Role
+### 1. Clone the repository
+~bash
+git clone https://github.com/watersRand/3D-Print.git
 
-Backend
-
-Node.js, Express
-
-Core application server and routing.
-
-Database
-
-Mongoose, MongoDB Atlas
-
-Persistent storage for order metadata and payment status.
-
-Cloud Storage
-
-Google Cloud Storage (GCS)
-
-Secure and scalable storage for large 3D model files.
-
-Payment Gateway
-
-M-Pesa Daraja API (STK Push)
-
-Payment collection.
-
-Deployment
-
-Docker, Google Cloud Run
-
-Serverless, containerized hosting with scale-to-zero efficiency.
-
-⚙️ Local Setup
-Clone the repository:
-
-git clone https://github.com/watersRand/3D-Print/
 cd 3d-print-mpesa-app
-
-Install dependencies:
-
+### 2. Install Dependancies
 npm install
+### 3. Configure environment variables
+ Database
+MONGO_URI=mongodb://localhost:27017/...
 
-Environment Variables: Create a .env file in the project root to handle local configuration (do not commit this file to Git):
+ Google Cloud Storage
+GCS_BUCKET=...
+GOOGLE_APPLICATION_CREDENTIALS=..
 
-# Database
-MONGO_URI=mongodb+srv://...
-
-# Google Cloud Storage (GCS)
-GCS_BUCKET=your-bucket-name
-
-# M-Pesa Credentials
+ M-Pesa Credentials (Sandbox)
 MPESA_KEY=...
 MPESA_SECRET=...
-MPESA_CREDENTIAL=...
 MPESA_PASSKEY=...
 MPESA_SHORTCODE=174379
 
-# Nodemailer
+ Email (using Gmail App Password)
 SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-gmail-app-password
+SMTP_PASS=your-app-password
+EMAIL_FROM=your-email@gmail.com
 
-# Base URL (for local testing, use a tunneling tool like ngrok)
+ Local Base URL (for ngrok testing)
 BASE_URL=https://[NGROK_TUNNEL_URL]
 
-Run the application:
-
+## 4. Start the Application
 npm start
-
-☁️ Deployment to Google Cloud Run (Declarative Method)
-This project uses a declarative deployment approach with a Dockerfile and a service.yaml file, ensuring repeatable and secure deployments.
-
-Prerequisites
-GCP Project: Ensure you have an active GCP project ([YOUR_GCP_PROJECT_ID]).
-
-GCP CLI: Install and configure the gcloud command-line tool.
-
-Service Account: Create a dedicated service account and grant it the Storage Object Admin role and the Cloud Run Invoker role.
-
-Step 1: Configure YAML and Initial Deploy
-Update cloudrun/service.yaml:
-
-Replace all bracketed placeholders (e.g., [YOUR_GCP_PROJECT_ID], [YOUR_SERVICE_ACCOUNT_EMAIL], and all credential values) with your actual secrets.
-
-
-
-Validation URL: [Your Cloud Run URL]/api/mpesa/callback
