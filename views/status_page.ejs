@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Status Check</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Status Container -->
+    <div id="status-container" class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-lg text-center">
+        <h1 class="text-3xl font-bold text-indigo-700 mb-4">Awaiting Payment Confirmation</h1>
+        <p class="text-gray-600 mb-8">Please complete the M-Pesa prompt on your phone.</p>
+
+        <div id="loader" class="flex justify-center items-center mb-6">
+            <svg class="animate-spin h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                </path>
+            </svg>
+        </div>
+
+        <p class="text-sm text-gray-500">Checking status for file: <span id="filename-display"
+                class="font-mono text-indigo-500">
+                <%= filename %>
+            </span></p>
+    </div>
+
+    <!-- Custom Modal/Message Box (Replaces Alert) -->
+    <div id="modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden items-center justify-center p-4"
+        onclick="closeModal()">
+        <div class="bg-white p-8 rounded-xl shadow-2xl max-w-sm text-center transform transition-all duration-300 scale-100"
+            onclick="event.stopPropagation()">
+            <div id="modal-icon" class="text-4xl mb-4"></div>
+            <h3 id="modal-title" class="text-xl font-bold mb-3"></h3>
+            <p id="modal-body" class="text-gray-600 mb-6"></p>
+            <button id="modal-button"
+                class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition duration-150"></button>
+        </div>
+    </div>
+
+    <script>
+        const filename = "<%= filename %>";
+        const intervalTime = 3000; // Poll every 3 seconds
+        let pollingInterval = null;
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+        const modalIcon = document.getElementById('modal-icon');
+        const modalButton = document.getElementById('modal-button');
+        const loader = document.getElementById('loader');
+
+        // Function to show the custom message box
+        function showModal(title, message, icon, buttonText, buttonAction, colorClass) {
+            modalTitle.textContent = title;
+            modalBody.textContent = message;
+            modalIcon.innerHTML = icon;
+            modalIcon.className = colorClass + ' text-4xl mb-4';
+            modalButton.textContent = buttonText;
+            modalButton.onclick = buttonAction;
+            loader.classList.add('hidden');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        async function checkPaymentStatus() {
+            try {
+                // Ensure the base URL is correct based on your Express setup
+                const response = await fetch(`/status-check/${filename}`);
+                const data = await response.json();
+
+                if (data.status === 'uploaded') {
+                    clearInterval(pollingInterval);
+                    showModal(
+                        "Payment Confirmed!",
+                        "Your payment was successful and your file has been uploaded for printing.",
+                        '🎉',
+                        'Please check your email',
+                        "View Confirmation (Refresh)",
+                        () => { window.location.reload(); },
+                        'text-green-600'
+                    );
+                } else if (data.status === 'payment_failed') {
+                    clearInterval(pollingInterval);
+                    showModal(
+                        "Payment Failed",
+                        "The M-Pesa payment was cancelled or failed. Please try again.",
+                        '❌',
+                        "Try Again (Go Home)",
+                        () => { window.location.href = '/'; },
+                        'text-red-600'
+                    );
+                }
+                // If status is 'pending', keep polling.
+
+            } catch (error) {
+                console.error("Polling error:", error);
+                // Stop polling on critical error
+                clearInterval(pollingInterval);
+                showModal(
+                    "Connection Error",
+                    "Could not check payment status. Please check your network and try reloading.",
+                    '⚠️',
+                    "Reload Page",
+                    () => { window.location.reload(); },
+                    'text-yellow-600'
+                );
+            }
+        }
+
+        // Start polling when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            pollingInterval = setInterval(checkPaymentStatus, intervalTime);
+        });
+
+    </script>
+</body>
+
+</html>

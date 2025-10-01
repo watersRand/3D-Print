@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Print Admin Dashboard</title>
+    <!-- Load Tailwind CSS and Inter Font -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Custom gradient for a professional look */
+            background: linear-gradient(135deg, #1e40af 0%, #34d399 100%);
+        }
+
+        /* Custom scrollbar for large tables */
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen p-4 sm:p-6">
+    <div class="container bg-white mx-auto mt-8 p-6 sm:p-8 rounded-2xl shadow-2xl max-w-7xl">
+
+        <h2
+            class="text-3xl sm:text-4xl font-extrabold text-center text-indigo-700 mb-8 flex items-center justify-center space-x-3">
+            <svg class="w-8 h-8 sm:w-10 sm:h-10 text-indigo-500" fill="currentColor" viewBox="0 0 20 20"
+                xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M2 5a2 2 0 012-2h7a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2V5zM14 8a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V8zM2 12a2 2 0 012-2h7a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2zM14 15a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z">
+                </path>
+            </svg>
+            <span>3D Print Order Dashboard</span>
+        </h2>
+
+        <!-- Table Wrapper for horizontal scrolling on mobile -->
+        <div class="table-wrapper">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-indigo-600 rounded-t-xl">
+                    <tr>
+                        <th
+                            class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider rounded-tl-xl">
+                            Filename</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">Email
+                        </th>
+                        <th class="px-6 py-3 text-center text-xs font-semibold text-white uppercase tracking-wider">
+                            Payment Status</th>
+                        <th class="px-6 py-3 text-center text-xs font-semibold text-white uppercase tracking-wider">
+                            M-Pesa Ref</th>
+                        <th class="px-6 py-3 text-center text-xs font-semibold text-white uppercase tracking-wider">
+                            Collection Deadline</th>
+                        <th
+                            class="px-6 py-3 text-center text-xs font-semibold text-white uppercase tracking-wider rounded-tr-xl">
+                            Action</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <% files.forEach(f=> { %>
+                        <tr class="hover:bg-indigo-50 transition duration-150">
+                            <!-- Filename -->
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 truncate max-w-xs">
+                                <%= f.name %>
+                            </td>
+                            <!-- Email -->
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                <%= f.metadata.email || "-" %>
+                            </td>
+                            <!-- Payment Status -->
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <% if (f.metadata.paid==="true" ) { %>
+                                    <span
+                                        class="inline-flex items-center px-3 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                                        ✅ Paid
+                                    </span>
+                                    <% } else { %>
+                                        <span
+                                            class="inline-flex items-center px-3 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
+                                            ❌ Unpaid
+                                        </span>
+                                        <% } %>
+                            </td>
+                            <!-- M-Pesa Reference (NEW FIELD) -->
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center font-mono">
+                                <%= f.metadata.mpesaReference || "-" %>
+                            </td>
+                            <!-- Collection Deadline -->
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                                <% const deadline=f.metadata.collectionDeadline; let formattedDate="-" ; if (deadline) {
+                                    const date=new Date(deadline); formattedDate=date.toLocaleDateString('en-US', {
+                                    day: 'numeric' , month: 'short' , year: 'numeric' }); } %>
+                                    <%= formattedDate %>
+
+                            </td>
+                            <!-- Action Button -->
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                <% if (f.metadata.status==='uploaded' ) { %>
+                                    <a href="/admin/download/<%= f.name %>"
+                                        class="inline-block px-4 py-2 bg-teal-500 text-white text-xs font-bold rounded-lg hover:bg-teal-600 transition duration-150 shadow-md">
+                                        Download File
+                                    </a>
+                                    <% } else { %>
+                                        <span class="text-xs text-gray-400">Awaiting Upload</span>
+                                        <% } %>
+                            </td>
+                        </tr>
+                        <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Print Upload & Pay</title>
+    <!-- Load Tailwind CSS and Inter Font -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Custom gradient background for the body */
+        body {
+            background: linear-gradient(135deg, #4f46e5 0%, #a78bfa 100%);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div
+        class="container bg-white p-8 sm:p-10 rounded-2xl shadow-2xl w-full max-w-sm md:max-w-md text-center transition-all duration-300">
+
+        <h2 class="text-3xl font-extrabold text-indigo-700 mb-2">🚀 JKUAT 3D Print</h2>
+        <p class="text-gray-500 mb-8">Upload your file and initiate M-Pesa payment.</p>
+
+        <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data">
+
+            <!-- Email Input -->
+            <input type="email" name="email" placeholder="Enter your email" required
+                class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition duration-150">
+
+            <!-- Phone Input -->
+            <input type="text" name="phone" placeholder="2547..." required pattern="2547[0-9]{8}"
+                title="Phone number must start with 2547 and be 12 digits long (e.g., 2547XXXXXXXX)"
+                class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition duration-150">
+
+            <!-- File Input -->
+            <div
+                class="relative mb-6 p-1 border-2 border-dashed border-indigo-300 rounded-lg hover:border-indigo-500 transition duration-150">
+                <input type="file" name="file" id="fileInput" accept=".stl,.obj,.gltf,.glb,.ply" required
+                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                <label for="fileInput"
+                    class="block w-full text-center py-3 text-indigo-600 font-semibold cursor-pointer">
+                    Click to choose file (.stl, .obj, etc.)
+                </label>
+            </div>
+
+            <button type="submit" id="submitButton"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl w-full shadow-lg hover:shadow-xl transition duration-300 transform hover:scale-[1.01] flex items-center justify-center space-x-2">
+                <span id="buttonText">Upload & Pay (100 KES)</span>
+                <svg id="spinner" class="animate-spin h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg"
+                    fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                    </path>
+                </svg>
+            </button>
+        </form>
+
+        <!-- Progress and Message Area -->
+        <div class="mt-6">
+            <div class="progress-container h-3 bg-gray-200 rounded-full overflow-hidden hidden" id="progressContainer">
+                <div class="progress-bar h-full w-0 rounded-full transition-all duration-300 ease-out" id="progressBar"
+                    style="background: linear-gradient(90deg, #4f46e5, #8b5cf6);"></div>
+            </div>
+            <p class="loading-text mt-2 text-sm text-gray-600 hidden" id="loadingText">Uploading file & initiating
+                payment...</p>
+        </div>
+
+        <p class="note mt-6 text-sm text-gray-500">
+            Accepted formats: <span class="font-semibold">.stl, .obj, .gltf, .glb, .ply</span>.
+        </p>
+
+        <!-- Custom Alert/Error Box (To replace standard alert()) -->
+        <div id="errorBox" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden"
+            role="alert">
+            <span id="errorMessage" class="block sm:inline"></span>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById("uploadForm");
+        const submitButton = document.getElementById("submitButton");
+        const buttonText = document.getElementById("buttonText");
+        const spinner = document.getElementById("spinner");
+        const progressBar = document.getElementById("progressBar");
+        const progressContainer = document.getElementById("progressContainer");
+        const loadingText = document.getElementById("loadingText");
+        const errorBox = document.getElementById("errorBox");
+        const errorMessage = document.getElementById("errorMessage");
+
+        // Helper to show custom error message
+        function displayError(message) {
+            errorMessage.textContent = message;
+            errorBox.classList.remove('hidden');
+            progressContainer.classList.add('hidden');
+            loadingText.classList.add('hidden');
+            submitButton.disabled = false;
+            buttonText.textContent = "Upload & Pay (100 KES)";
+            spinner.classList.add('hidden');
+            progressBar.style.width = "0%"; // Reset progress
+        }
+
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+            errorBox.classList.add('hidden'); // Clear previous errors
+
+            // Disable button and show loading state
+            submitButton.disabled = true;
+            buttonText.textContent = "Processing...";
+            spinner.classList.remove('hidden');
+
+            const formData = new FormData(form);
+            const xhr = new XMLHttpRequest();
+
+            xhr.open("POST", form.action, true);
+
+            // Show progress indicator
+            progressContainer.classList.remove("hidden");
+            loadingText.classList.remove("hidden");
+            loadingText.textContent = "Uploading file (1/2)...";
+
+            // 1. File Upload Progress
+            xhr.upload.onprogress = function (e) {
+                if (e.lengthComputable) {
+                    const percent = (e.loaded / e.total) * 100;
+                    progressBar.style.width = percent + "%";
+                }
+            };
+
+            // 2. STK Push Initiation Status
+            xhr.onload = function () {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    // Success (usually a redirect signal 302 or 200)
+                    if (xhr.responseURL) {
+                        // The server sent a redirect (to /status/:filename)
+                        loadingText.textContent = "Payment initiated. Redirecting...";
+                        window.location.href = xhr.responseURL;
+                    } else {
+                        // Unexpected 200 response without redirect
+                        loadingText.textContent = "✅ Upload complete! Waiting for payment confirmation...";
+                        progressBar.style.width = "100%";
+                        // Handle success if server returns success without redirect (though highly unlikely for your flow)
+                    }
+                } else if (xhr.status >= 400) {
+                    // Handle server-side errors (STK push failure, validation errors, etc.)
+                    const responseText = xhr.responseText || "Unknown error.";
+                    displayError(`Upload or Payment failed: ${responseText.substring(0, 100)}...`);
+                    // Ensure the button is re-enabled on failure
+                    submitButton.disabled = false;
+                } else {
+                    displayError("An unexpected network error occurred.");
+                }
+            };
+
+            xhr.onerror = function () {
+                // Network level error (e.g., server offline)
+                displayError("Network connection error. Check your internet connection.");
+            };
+
+            xhr.send(formData);
+        });
+
+        // Update file input label dynamically
+        document.getElementById('fileInput').addEventListener('change', function (e) {
+            const fileName = e.target.files[0] ? e.target.files[0].name : 'Click to choose file (.stl, .obj, etc.)';
+            document.querySelector('label[for="fileInput"]').textContent = fileName;
+        });
+
+    </script>
+</body>
+
+</html>
